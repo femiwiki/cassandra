@@ -1,0 +1,50 @@
+#!/bin/bash
+set -euo pipefail; IFS=$'\n\t'
+
+# Starting Cassandra and enabling password authentication script
+#
+# References
+#   http://cassandra.apache.org/doc/4.0/operating/security.html#authentication
+
+# Update Configurations file
+sed -i -r 's/^(# )?(authenticator:).*/\2 PasswordAuthenticator/' /etc/cassandra/cassandra.yaml
+
+# Create arbitarary passwords
+ADMIN_PASSWORD="$(base64 /dev/urandom|tr -d /+|head -c35 || true)"
+if [ -z "${DEV_PASSWORD:-}" ]; then ## TODO if 대신 짧게 줄이기
+  USER_PASSWORD="$(base64 /dev/urandom|tr -d /+|head -c35 || true)"
+else
+  USER_PASSWORD=${DEV_PASSWORD}
+fi
+
+enable-authentication() {
+  # Await until cassandra is started and normally errored
+  until cqlsh -u cassandra -p cassandra -e "SHOW HOST;" ; do
+    sleep 2;
+  done
+
+  echo 'Creating keyspace has different name and the replication factor'
+  # References:
+  #   http://cassandra.apache.org/doc/4.0/cql/ddl.html#create-keyspace
+  #   http://cassandra.apache.org/doc/4.0/operating/security.html#enabling-password-authentication
+  cqlsh -u cassandra -p cassandra -e "CREATE KEYSPACE femiwiki \
+                                        WITH replication = {'class': 'NetworkTopologyStrategy', 'DC1' : 3, 'DC2' : 3}"
+
+  echo 'Creating new superuser "admin" with arbitrary password'
+  cqlsh -k femiwiki -u cassandra -p cassandra -e "CREATE ROLE admin WITH SUPERUSER = true AND LOGIN = true AND PASSWORD = '${ADMIN_PASSWORD}';"
+
+  echo 'Disabling default superuser'
+  cqlsh -k femiwiki -u admin -p "$ADMIN_PASSWORD" -e "ALTER ROLE cassandra WITH SUPERUSER = false AND LOGIN = false;"
+
+  echo 'Creating a new user who cannot access system table'
+  cqlsh -k femiwiki -u admin -p "$ADMIN_PASSWORD" -e "CREATE ROLE '${USER_NAME:-femiwiki}' WITH LOGIN = true AND PASSWORD = '${USER_PASSWORD}';"
+
+  # Print passwords
+  echo "Generated admin(superuser)'s password: ${ADMIN_PASSWORD}"
+  echo "Generated ${USER_NAME:-femiwiki}'s password: ${USER_PASSWORD}"
+}
+
+# Keep trying enabling authentication...
+enable-authentication &
+# Start Cassandra in the foreground
+docker-entrypoint.sh cassandra -f
