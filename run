@@ -11,7 +11,7 @@ sed -i -r 's/^(# )?(authenticator:).*/\2 PasswordAuthenticator/' /etc/cassandra/
 
 # Create arbitarary passwords
 ADMIN_PASSWORD="$(base64 /dev/urandom|tr -d /+|head -c35 || true)"
-if [ -z "${DEV_PASSWORD:-}" ]; then ## TODO if 대신 짧게 줄이기
+if [ -z "${DEV_PASSWORD:-}" ]; then
   USER_PASSWORD="$(base64 /dev/urandom|tr -d /+|head -c35 || true)"
 else
   USER_PASSWORD=${DEV_PASSWORD}
