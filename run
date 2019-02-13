@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail; IFS=$'\n\t'
 
-# Starting Cassandra and enabling password authentication script
+# A script which starts Cassandra daemon and enables password authentication
 #
 # References
 #   http://cassandra.apache.org/doc/4.0/operating/security.html#authentication
@@ -18,12 +18,12 @@ else
 fi
 
 enable-authentication() {
-  # Await until cassandra is started and normally errored
+  # Await until cassandra is started
   until cqlsh -u cassandra -p cassandra -e "SHOW HOST;" ; do
     sleep 2;
   done
 
-  echo 'Creating keyspace has different name and the replication factor'
+  echo 'Creating a new keyspace with a different name and a different replication factor'
   # References:
   #   http://cassandra.apache.org/doc/4.0/cql/ddl.html#create-keyspace
   #   http://cassandra.apache.org/doc/4.0/operating/security.html#enabling-password-authentication
@@ -44,7 +44,7 @@ enable-authentication() {
   echo "Generated ${USER_NAME:-femiwiki}'s password: ${USER_PASSWORD}"
 }
 
-# Keep trying enabling authentication...
+# Keep trying to activate password authentication until it succeeds...
 enable-authentication &
 # Start Cassandra in the foreground
 docker-entrypoint.sh cassandra -f
