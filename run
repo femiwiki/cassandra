@@ -21,7 +21,7 @@ else
 fi
 
 enable-authentication() {
-  # Await until cassandra is started
+  # Wait until cassandra is ready
   until cqlsh -u cassandra -p cassandra -e "SHOW HOST;" ; do
     sleep 2;
   done
