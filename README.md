@@ -1,5 +1,7 @@
 # Cassandra [![Docker Hub Status]][docker hub link]
 
+# :warning: CAUTION! This repository/Docker image is not maintained! 
+
 기본적으로 인증을 요구하도록 변형된 [Cassandra] 도커 이미지.
 
 ```bash
